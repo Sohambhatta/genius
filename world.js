@@ -233,7 +233,12 @@ function createWorld(T) {
   for (const y of [.42,1.08]) block('#624a42',0,y,.095,1.42,.15,.12,door);
   rock('#ffc86a',0,.76,.15,.15,.15,.075,door);
   const chest = new T.Group();
-  chest.position.set(3.9,.26,-2.65);scene.add(chest);
+  chest.position.set(3.9,-.28,-2.65);scene.add(chest);
+  const mound=rock('#d7ac73',3.9,.26,-2.65,.72,.39,.55);
+  const sand=Array.from({length:18},(_,i)=>{
+    const a=i*2.399,r=.23+(i%5)*.09;
+    return rock(i%2?'#edc88c':'#c99660',3.9+Math.cos(a)*r,.38+random()*.12,-2.65+Math.sin(a)*r,.10,.07,.09);
+  });
   block('#9d4e30',0,.19,0,.72,.38,.52,chest);
   const lid = new T.Group();
   lid.position.set(0,.39,-.26);chest.add(lid);
@@ -282,7 +287,8 @@ function createWorld(T) {
     scene.add(batch);
   }
   const target=new T.Vector3(), desired=new T.Vector3();
-  let previousStage='', stageAt=0, width=0, height=0, frameAt=0;
+  let previousStage='', stageAt=0, width=0, height=0, frameAt=0, overhead=0;
+  const marker=$('dig-marker'), projected=new T.Vector3();
   const lerp=T.MathUtils.lerp;
   function frame(now) {
     const w=canvas.clientWidth,h=canvas.clientHeight;
@@ -300,7 +306,7 @@ function createWorld(T) {
     const cinematic=progress===3;
     const smooth=(x)=>{const n=Math.max(0,Math.min(1,x));return n*n*(3-2*n);};
     const gateShot=cinematic&&stage==='opening'&&!reduced.matches ? smooth(time/.8)*(1-smooth((time-2.35)/.95)) : 0;
-    const travel=stage==='walk'?(reduced.matches?1:smooth(time/3.35)):stage==='done'?1:0;
+    const travel=stage==='walk'?(reduced.matches?1:smooth(time/3.35)):['dig','done'].includes(stage)?1:0;
     const i=Math.floor(progress), a=shots[i], b=shots[Math.min(i+1,3)], t=progress-i;
     desired.set(...a.eye.map((value,j)=>lerp(value,b.eye[j],t)));
     target.set(...a.target.map((value,j)=>lerp(value,b.target[j],t)));
@@ -310,13 +316,22 @@ function createWorld(T) {
       const follow=travel*.85;
       target.set(lerp(w<h?3.9:2.6,3.9,gateShot),lerp(.88,1.15,gateShot),lerp(1.25-follow,.42,gateShot));
       desired.set(lerp(9.5,7.1,gateShot),lerp(7.4,4.2,gateShot),lerp(9.1,6.2,gateShot)-follow);
-      camera.zoom=lerp(2.05,2.9,gateShot)*mobile;
+      overhead=lerp(overhead,['dig','done'].includes(stage)?1:0,reduced.matches?1:.055);
+      target.lerp(new T.Vector3(w<h?3.9:2.85,.22,-1.9),overhead);
+      desired.lerp(new T.Vector3(6.1,10.4,1.05),overhead);
+      camera.zoom=lerp(lerp(2.05,2.9,gateShot),2.75,overhead)*mobile;
     }
-    camera.position.copy(desired);camera.lookAt(target);camera.updateProjectionMatrix();
+    camera.position.copy(desired);camera.lookAt(target);camera.updateProjectionMatrix();camera.updateMatrixWorld();
+    marker.hidden=stage!=='dig'||!cinematic||overhead<.72;
+    if(!marker.hidden){
+      projected.set(3.9,.72,-2.65).project(camera);
+      marker.style.left=((projected.x*.5+.5)*100)+'%';
+      marker.style.top=((.5-projected.y*.5)*100)+'%';
+    }
 
     const dt=Math.min(.05,(now-frameAt)/1000);frameAt=now;
     const moving=stage==='walk', done=stage==='done';
-    const opening=['opening','move','walk','done'].includes(stage);
+    const opening=['opening','move','walk','dig','done'].includes(stage);
     const play=progress>2.52;
     const walk=travel;
     const step=reduced.matches?0:Math.sin(walk*24)*.1;
@@ -331,6 +346,10 @@ function createWorld(T) {
     });
     const ease=reduced.matches?1:1-Math.exp(-dt*7);
     door.position.y=opening?2.15*(stage==='opening'&&!reduced.matches?smooth((time-.65)/1.7):1):0;
+    const depth=Number(document.body.dataset.digs||0);
+    chest.position.y=lerp(chest.position.y,-.28+depth*.18,ease);
+    mound.scale.y=lerp(mound.scale.y,depth===3?.012:.39-depth*.105,ease);
+    sand.forEach((grain,i)=>{grain.visible=i>=depth*6;});
     lid.rotation.x=lerp(lid.rotation.x,done?-1.13:0,ease);
     const count=[5,19,6][Number($('difficulty').value)];
     seeds.forEach(({pickup,x,z},index)=>{
