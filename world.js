@@ -333,6 +333,7 @@ function createWorld(T) {
   for(let i=0;i<20;i++){
     const a=i*2.399, r=2.4+random()*1.6;
     const x=Math.cos(a)*r,z=Math.sin(a)*r;
+    if(Math.abs(x)<1.65 || (x>0 && z>-.8))continue;
     mesh(new T.CylinderGeometry(.06,.1,.7,7),'#7b583b',x,.59,z,1,1,1,ridge);
     rock(i%2?'#598544':'#8da34f',x,1.04,z,.48,.59,.45,ridge);
   }
@@ -370,7 +371,11 @@ function createWorld(T) {
       camera.top=7.9;camera.bottom=-7.9;
     }
     const stage=document.body.dataset.stage;
-    if(stage!==previousStage){previousStage=stage;stageAt=now;}
+    if(stage!==previousStage){
+      if(stage==='challenge'){overhead=0;ridgeCamera=0;}
+      previousStage=stage;
+      stageAt=now;
+    }
     const time=(now-stageAt)/1000;
     const questBounds=beats[3].getBoundingClientRect();
     const inQuest=questBounds.top <= innerHeight*.49 && questBounds.bottom>0;
@@ -399,10 +404,10 @@ function createWorld(T) {
     }
     ridgeCamera=lerp(ridgeCamera,levelTwo&&cinematic?1:0,reduced.matches?1:.045);
     if(ridgeCamera>.001){
-      const ridgeZ=lerp(3,.35,ridgeTravel)-climb*2.45;
-      target.lerp(new T.Vector3(w<h?22:20.8,.65,ridgeZ-.2),ridgeCamera);
-      desired.lerp(new T.Vector3(28,9.8,8.4-climb*2.2),ridgeCamera);
-      camera.zoom=lerp(camera.zoom,2.3*mobile,ridgeCamera);
+      const ridgeZ=lerp(3,.35,ridgeTravel*.66)-climb*1.85;
+      target.lerp(new T.Vector3(w<h?22:20.3,.61,ridgeZ-.4),ridgeCamera);
+      desired.lerp(new T.Vector3(25.8,11.7,ridgeZ+7.1),ridgeCamera);
+      camera.zoom=lerp(camera.zoom,2.65*mobile,ridgeCamera);
     }
     camera.position.copy(desired);camera.lookAt(target);camera.updateProjectionMatrix();camera.updateMatrixWorld();
     marker.hidden=stage!=='dig'||!cinematic||overhead<.72;
