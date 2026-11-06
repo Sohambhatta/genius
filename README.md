@@ -1,22 +1,24 @@
-# Genius · The Lantern Isles
+# Genius · The Emberwake
 
-**Project** — Innovation + Tech UserBob Landing Page
+Innovation + Tech / UserBob. Genius is a K–5 adventure game concept where students use reading and math to progress. This static landing page previews the first adventure in the kingdom of Bramblewick.
 
-Genius is a K–5 learning game concept inspired by elementary-school reading and math games. A quest ties the skills together. The story clue tells the player what to count or calculate, and the answer changes the world.
+## Run and publish
 
-## Run it
+Serve this directory with a static HTTP server. GitHub Pages publishes the repository root from main. The illustrated experience and playable quest use local assets. The optional WebGL atlas loads pinned Three.js from jsDelivr only when opened. If it cannot load, the illustrated atlas remains available.
 
-Open index.html in a browser or serve this directory with any static file server. There is no install, account, backend, or asset download. The optional read-aloud feature uses browser speech synthesis.
+## Contributor handoff
 
-## Guide for future contributors and AI agents
+- index.html and style.css define the hero, illustrated atlas, demo and educator section.
+- game.js holds the two routes, three difficulty bands, hints, the shared reading/math finale, XP and route-dependent outcomes.
+- world.js builds a rotatable WebGL atlas with procedural characters, terrain and animated lighting. It responds to map selection and quest state.
+- emberwake.webp and kingdom.webp are original generated artwork for this project. Three.js is MIT licensed, and the scene geometry is authored here.
+- Check both routes, all difficulty bands, wrong-answer hints, final rewards, keyboard controls, reduced motion and the illustrated fallback.
+- The questions are original, informed by elementary assessment item formats. They have not been validated as a formal assessment or mapped to a full curriculum.
 
-- index.html contains the landing page, character story, quest controls, and audience explanation.
-- style.css handles the sticky scene, title reveal, mobile layout, and reduced-motion styling.
-- game.js defines the challenge data and the procedural scene. The camera travels between four views, and the quest result lights the bridge and reveals the story reward.
-- Juniper is a fox librarian carrying a book. Pip is a moth mapmaker whose search depends on the player restoring the bridge lights. Keep character details tied to what players do.
-- Before publishing, try an incorrect answer, the correct answers (4, 7, 12), the story reward, and replay. Check the flyover, scrolling, keyboard input, reduced motion, and a narrow screen.
-- The scene and character meshes are original procedural geometry. Keep new dependencies free to use and record licenses and credits for any imported assets.
+## Research references
 
-## GitHub Pages
-
-Use a public GitHub repository named **genius** for the free project URL at `https://YOUR-USERNAME.github.io/genius/`. Set its description to **Innovation + Tech UserBob Landing Page**. Push this directory to main, then enable **Settings → Pages → Deploy from a branch → main → / (root)**. All asset paths are relative to the project URL.
+- [Bruno Simon's MIT portfolio source](https://github.com/brunosimon/folio-2025) shows how the environment can act as the interface.
+- [Continuous scroll-driven 3D scene discussion](https://www.reddit.com/r/threejs/comments/1wacigy/rebuilt_my_portfolio_scrolldriven_one_continuous/) shows both the appeal of camera choreography and the friction of requiring it.
+- [Three.js](https://github.com/mrdoob/three.js) supplies the WebGL atlas. [Kenney Nature Kit](https://kenney.nl/assets/nature-kit) offers CC0 models for future expansion.
+- [Minnesota Questions Tool](https://testing123.education.mn.gov/test/assess/ques) and [Massachusetts Grade 3 released items](https://www.doe.mass.edu/mcas/2025/release/g3-math.pdf) informed question structures.
+- [Stack Overflow discussion on batching repeated meshes](https://stackoverflow.com/questions/60852311/threejs-vertices-and-faces-optimization) and the [Three.js InstancedMesh API](https://threejs.org/docs/pages/InstancedMesh.html) informed the atlas batching.
