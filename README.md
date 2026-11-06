@@ -19,3 +19,9 @@ Serve this folder over HTTP. GitHub Pages serves the root of main. Three.js and 
 - [Three.js](https://github.com/mrdoob/three.js) and [GSAP ScrollTrigger](https://gsap.com/docs/v3/Plugins/ScrollTrigger/)
 - [Bruno Simon's portfolio source](https://github.com/brunosimon/folio-2025)
 - [Minnesota Questions Tool](https://testing123.education.mn.gov/test/assess/ques) and [Massachusetts released grade 3 items](https://www.doe.mass.edu/mcas/2025/release/g3-math.pdf)
+
+## Environment references
+
+- [Kenney Nature Kit](https://kenney.nl/assets/nature-kit) and its [GitHub Pages asset index entry](https://tmhsdigital.github.io/Free-Game-Dev-Assets/entry/kenney-nature-kit/) are CC0 prop references.
+- [Quaternius Stylized Nature MegaKit](https://quaternius.itch.io/stylized-nature-megakit) is a CC0 source for more detailed glTF foliage. Import selected meshes and batch repeats by geometry and material.
+- The current bridge, foliage, shoreline, and village details are authored procedurally in world.js. No third-party model files are shipped.

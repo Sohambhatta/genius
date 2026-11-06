@@ -23,7 +23,7 @@ function render() {
   const data = problems[Number(level.value)];
   byId('seeds').textContent = '🌱 ' + seeds + ' seeds';
   byId('xp').textContent = '✦ ' + xp + ' XP';
-  const labels = {challenge:'01 / SUPPLY CACHE',pickup:'01 / COLLECTING SUPPLIES',path:'02 / READ THE TRAIL',move:'02 / TRAIL UNLOCKED',walk:'03 / CROSSING THE GATE',done:'03 / CHEST OPENED'};
+  const labels = {challenge:'01 / SUPPLY CACHE',pickup:'01 / COLLECTING SUPPLIES',path:'02 / READ THE TRAIL',opening:'02 / THE GATE OPENS',move:'02 / TRAIL UNLOCKED',walk:'03 / CROSSING THE GATE',done:'03 / CHEST OPENED'};
   byId('chapter').textContent = labels[stage];
   const body = byId('game-body');
   body.replaceChildren();
@@ -57,14 +57,19 @@ function render() {
     write('p',data.question);
     actions(data.paths.map((path,i)=>[path,()=>{
       if(i!==data.path){byId('status').textContent='Check the trail clue and try again.';return;}
-      xp=70;setStage('move');
+      xp=70;
+      const current=++run;setStage('opening');
+      setTimeout(()=>{if(current===run)setStage('move');}, matchMedia('(prefers-reduced-motion: reduce)').matches ? 100 : 3400);
     }]));
+  } else if(stage === 'opening'){
+    write('h3','The gate is opening…');
+    write('p','Watch the bridge as the gate lifts.');
   } else if(stage === 'move'){
-    write('h3','The gate is opening!');
+    write('h3','The bridge is clear!');
     write('p','You found a safe path. Move Rowan through the gate to claim the chest.');
     actions([['Move Rowan →',()=>{
       const current=++run;setStage('walk');
-      setTimeout(()=>{if(current!==run)return;xp=100;setStage('done');},1200);
+      setTimeout(()=>{if(current!==run)return;xp=100;setStage('done');},matchMedia('(prefers-reduced-motion: reduce)').matches ? 100 : 3500);
     }]]);
   } else if(stage === 'walk'){
     write('h3','Onward, Rowan!');

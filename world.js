@@ -68,6 +68,14 @@ function createWorld(T) {
   }
   const rock=(color,x,y,z,sx,sy,sz,parent)=>mesh(spheres,color,x,y,z,sx,sy,sz,parent);
   const block=(color,x,y,z,sx,sy,sz,parent)=>mesh(cube,color,x,y,z,sx,sy,sz,parent);
+  const cliffColors=['#705b4d','#88715a','#9b805e','#66594c'];
+  for(let i=0;i<72;i++){
+    const a=i*Math.PI*2/72, radius=8.39+(random()-.5)*.45;
+    const x=Math.cos(a)*radius,z=Math.sin(a)*radius*.82;
+    const strata=rock(cliffColors[i%4],x,-.47-random()*.43,z,.44+random()*.26,.45+random()*.54,.37+random()*.23);
+    strata.rotation.y=-a;
+    if(i%3===0)rock('#77934c',x,.05,z,.43,.19,.34);
+  }
   const terrain=new T.CylinderGeometry(8.8,7.3,1.8,24);
   mesh(terrain,'#68543a',0,-1.05,0,1,1,.82);
   mesh(new T.CylinderGeometry(8.77,8.82,.36,24),'#678f3f',0,.01,0,1,1,.82);
@@ -94,7 +102,7 @@ function createWorld(T) {
   for(let i=0;i<57;i++){
     const a=random()*6.28,r=3+random()*5;
     const x=Math.cos(a)*r,z=Math.sin(a)*r*.8;
-    if((z< -2 && Math.abs(x)<3.4)||(z>3 && Math.abs(x)<2.4)||Math.abs(Math.abs(x)-3.8)<.72)continue;
+    if((Math.abs(x-3.9)<1.28 && z> -3.15 && z<3.7)||(z< -2 && Math.abs(x)<3.4)||(z>3 && Math.abs(x)<2.4)||Math.abs(Math.abs(x)-3.8)<.72)continue;
     tree(x,z,.44+random()*.62);
   }
   for(let i=0;i<105;i++){
@@ -109,6 +117,15 @@ function createWorld(T) {
     block('#674535',x,.51,z+.444,.21,.55,.05);
     block('#7d4c45',x+.29,.88,z+.444,.19,.2,.06);
     block('#705b4e',x+.25,1.54,z-.17,.16,.44,.16);
+    block('#a18e73',x+.25,1.77,z-.17,.23,.07,.22);
+    for(const side of [-1,1]){
+      block('#976e4b',x+side*.47,.64,z+.438,.07,.92,.07);
+      block('#f4cf87',x+side*.30,.88,z+.479,.135,.16,.035);
+      block('#a46d50',x+side*.30,.77,z+.50,.22,.075,.12);
+      rock('#d67361',x+side*.30,.83,z+.55,.065,.07,.055);
+    }
+    block('#92714e',x,.26,z+.52,.40,.10,.26);
+    rock('#f9c375',x+.08,.52,z+.483,.04,.04,.025);
   }
   house(-1.14,4.2,'#b95440');house(1.22,4.5,'#bd7544');house(.8,5.75,'#994c4a');
   mesh(new T.CylinderGeometry(1.15,3.35,3.65,12),'#573f38',0,1.97,-3.7);
@@ -140,12 +157,12 @@ function createWorld(T) {
     rock('#fbdfa4',side*.21,1.35,.52,.125,.13,.05,giant);
     rock('#30352b',side*.20,1.35,.56,.055,.063,.028,giant);
   }
-  const pool=mesh(new T.CylinderGeometry(1.46,1.24,.11,22),'#4cafac',4.45,.23,-.45);
+  const pool=mesh(new T.CylinderGeometry(1.46,1.24,.11,22),'#4cafac',4.92,.23,-.45);
   pool.scale.z=.78;
   rock('#777377',4.6,.75,-1.3,1.25,.8,.65);
   const stream=new T.CatmullRomCurve3([[4.55,1.46,-1.28],[4.52,1.31,-.91],[4.49,.66,-.57],[4.48,.26,-.45]].map(p=>new T.Vector3(...p)));
   mesh(new T.TubeGeometry(stream,20,.18,9,false),'#a7e4db',0,0,0);
-  const owl=new T.Group();owl.position.set(5.05,.25,.52);scene.add(owl);
+  const owl=new T.Group();owl.position.set(5.72,.25,1.64);scene.add(owl);
   rock('#8572a6',0,.39,0,.37,.45,.31,owl);
   rock('#a78dbf',0,.83,0,.46,.39,.35,owl);
   for(const side of [-1,1]){
@@ -154,6 +171,7 @@ function createWorld(T) {
     mesh(new T.ConeGeometry(.14,.31,6),'#9775b1',side*.27,1.13,0,1,1,1,owl);
   }
   rock('#ecaf62',0,.73,.34,.097,.09,.10,owl);
+  const boots=[];
   const rowan=new T.Group();rowan.position.set(.2,.19,3.78);scene.add(rowan);
   mesh(new T.CylinderGeometry(.21,.36,.5,12),'#e9a739',0,.45,0,1,1,1,rowan);
   rock('#f4b687',0,.86,.04,.25,.24,.23,rowan);
@@ -161,7 +179,7 @@ function createWorld(T) {
   rock('#b25243',0,.65,.02,.27,.067,.24,rowan);
   block('#98663a',.25,.45,.12,.15,.24,.18,rowan);
   for(const side of [-1,1]){
-    rock('#236962',side*.115,.14,.04,.12,.13,.16,rowan);
+    boots.push(rock('#236962',side*.115,.14,.04,.12,.13,.16,rowan));
     rock('#3b312d',side*.09,.89,.235,.025,.035,.026,rowan);
   }
   // The gate and pickups are scene objects whose state follows the quest.
@@ -175,8 +193,35 @@ function createWorld(T) {
     }
   }
   for(let i=0;i<7;i++) block(i%2?'#bc9465':'#dab57d',3.9,.20,1.01+i*.21,.73,.045,.19);
+  // A raised deck physically connects Rowan's approach to the chest landing.
+  for(let i=0;i<21;i++){
+    const z=2.59-i*.224;
+    const rise=.33*Math.min(Math.max(0,(2.62-z)/.64),Math.max(0,(z+2.02)/.63),1);
+    block(['#ae7955','#bd8e62','#d6a674'][i%3],3.9,.24+rise,z,1.47,.12,.209);
+    for(const side of [-1,1]){
+      if(i%4===0){
+        block('#805f48',3.9+side*.78,.45+rise,z,.13,.62,.15);
+        block('#e1b87e',3.9+side*.78,.77+rise,z,.18,.095,.20);
+        if(i<17)block('#a57550',3.9+side*.78,.62+rise,z-.45,.09,.09,.89);
+      }
+    }
+  }
+  for(const x of [3.06,4.74]){
+    block('#62564d',x,.1,.25,.25,1.02,.27);
+    block('#a58f72',x,.53,.25,.39,.14,.38);
+  }
+  for(let i=0;i<37;i++){
+    const a=i*2.399,r=.3+random()*1.55;
+    const side=i%2?1:-1,x=3.9+side*(.98+r*.58),z=1.3+Math.cos(a)*2.9;
+    rock(i%3?'#719649':'#a0a860',x,.26,z,.16,.13,.19);
+    if(i%3===0){
+      mesh(new T.CylinderGeometry(.016,.02,.27,5),'#427443',x,.36,z);
+      rock(i%2?'#ed996c':'#f4ca75',x,.51,z,.096,.057,.093);
+      rock('#fae7a4',x,.55,z,.039,.034,.041);
+    }
+  }
   const gate = new T.Group();
-  gate.position.set(3.9,.22,.45);
+  gate.position.set(3.9,.51,.45);
   scene.add(gate);
   for (const x of [-.85,.85]) {
     block('#ae9678',x,.85,0,.25,1.75,.35,gate);
@@ -188,7 +233,7 @@ function createWorld(T) {
   for (const y of [.42,1.08]) block('#624a42',0,y,.095,1.42,.15,.12,door);
   rock('#ffc86a',0,.76,.15,.15,.15,.075,door);
   const chest = new T.Group();
-  chest.position.set(3.9,.27,-1.12);scene.add(chest);
+  chest.position.set(3.9,.26,-2.65);scene.add(chest);
   block('#9d4e30',0,.19,0,.72,.38,.52,chest);
   const lid = new T.Group();
   lid.position.set(0,.39,-.26);chest.add(lid);
@@ -248,28 +293,44 @@ function createWorld(T) {
       camera.left=-7.9*aspect;camera.right=7.9*aspect;
       camera.top=7.9;camera.bottom=-7.9;
     }
+    const stage=document.body.dataset.stage;
+    if(stage!==previousStage){previousStage=stage;stageAt=now;}
+    const time=(now-stageAt)/1000;
     const progress=reduced.matches?Math.round(position):position;
+    const cinematic=progress===3;
+    const smooth=(x)=>{const n=Math.max(0,Math.min(1,x));return n*n*(3-2*n);};
+    const gateShot=cinematic&&stage==='opening'&&!reduced.matches ? smooth(time/.8)*(1-smooth((time-2.35)/.95)) : 0;
+    const travel=stage==='walk'?(reduced.matches?1:smooth(time/3.35)):stage==='done'?1:0;
     const i=Math.floor(progress), a=shots[i], b=shots[Math.min(i+1,3)], t=progress-i;
     desired.set(...a.eye.map((value,j)=>lerp(value,b.eye[j],t)));
     target.set(...a.target.map((value,j)=>lerp(value,b.target[j],t)));
     const mobile=Math.min(1,w/h*1.35);
     camera.zoom=lerp(a.zoom,b.zoom,t)*mobile;
-    if(w<h) target.x=lerp(target.x,3.65,Math.min(1,progress/2));
+    if(cinematic){
+      const follow=travel*.85;
+      target.set(lerp(w<h?3.9:2.6,3.9,gateShot),lerp(.88,1.15,gateShot),lerp(1.25-follow,.42,gateShot));
+      desired.set(lerp(9.5,7.1,gateShot),lerp(7.4,4.2,gateShot),lerp(9.1,6.2,gateShot)-follow);
+      camera.zoom=lerp(2.05,2.9,gateShot)*mobile;
+    }
     camera.position.copy(desired);camera.lookAt(target);camera.updateProjectionMatrix();
 
-    const stage=document.body.dataset.stage;
-    if(stage!==previousStage){previousStage=stage;stageAt=now;}
-    const time=(now-stageAt)/1000;
     const dt=Math.min(.05,(now-frameAt)/1000);frameAt=now;
     const moving=stage==='walk', done=stage==='done';
-    const opening=['move','walk','done'].includes(stage);
+    const opening=['opening','move','walk','done'].includes(stage);
     const play=progress>2.52;
-    const walk=moving?Math.min(1,time/.99):done?1:0;
+    const walk=travel;
     const step=reduced.matches?0:Math.sin(walk*24)*.1;
-    rowan.position.set(play?3.9:.2,.19+(moving?Math.abs(step):0),play?lerp(2.95,-.72,walk):3.78);
+    const routeZ=lerp(3.1,-2.16,walk);
+    const deck=play?.33*Math.min(smooth((2.62-routeZ)/.64),smooth((routeZ+2.02)/.63)):0;
+    rowan.position.set(play?3.9:.2,.19+deck+(moving?Math.abs(step):0),play?routeZ:3.78);
     rowan.rotation.y=play?Math.PI:.34;
+    boots.forEach((boot,i)=>{
+      const stride=moving&&!reduced.matches?Math.sin(time*12+i*Math.PI):0;
+      boot.position.y=.14+Math.max(0,stride)*.085;
+      boot.position.z=.04+stride*.10;
+    });
     const ease=reduced.matches?1:1-Math.exp(-dt*7);
-    door.position.y=lerp(door.position.y,opening?1.85:0,ease);
+    door.position.y=opening?2.15*(stage==='opening'&&!reduced.matches?smooth((time-.65)/1.7):1):0;
     lid.rotation.x=lerp(lid.rotation.x,done?-1.13:0,ease);
     const count=[5,19,6][Number($('difficulty').value)];
     seeds.forEach(({pickup,x,z},index)=>{
@@ -279,12 +340,12 @@ function createWorld(T) {
       if(!reduced.matches)pickup.rotation.y=now*.002+index;
     });
     stars.forEach((star,index)=>{
-      const burst=done||stage==='move';
-      const age=time;
-      star.visible=burst&&age<1.22;
+      const burst=done||stage==='opening';
+      const age=done?time:time-1.65;
+      star.visible=burst&&age>=0&&age<1.22;
       if(!star.visible)return;
       const angle=index*2.399;
-      star.position.set(3.9+Math.cos(angle)*age*(1+index%4*.32),.92+age*(3+index%5*.35)-age*age*2.8,(done?-1.1:.45)+Math.sin(angle)*age*1.6);
+      star.position.set(3.9+Math.cos(angle)*age*(1+index%4*.32),.92+age*(3+index%5*.35)-age*age*2.8,(done?-2.65:.45)+Math.sin(angle)*age*1.6);
       star.rotation.set(age*2,index+age*2,angle+age);
       star.scale.setScalar(1-Math.max(0,age-.7));
     });
