@@ -309,8 +309,55 @@ function createWorld(T) {
     });
     scene.add(batch);
   }
-  const target=new T.Vector3(), desired=new T.Vector3();
-  let previousStage='', stageAt=0, width=0, height=0, frameAt=0, overhead=0;
+  // Level two is a separate ridge diorama, reached with the recovered map.
+  const ridge=new T.Group();
+  ridge.position.x=22;scene.add(ridge);
+  mesh(new T.CylinderGeometry(4.7,4.1,1.0,20),'#806b50',0,-.43,0,1,1,1,ridge);
+  mesh(new T.CylinderGeometry(4.73,4.66,.18,20),'#699343',0,.14,0,1,1,1,ridge);
+  for(let i=0;i<24;i++){
+    const z=3-i*.23, rise=Math.max(0,(-z)*.28);
+    block(i%3?'#c6b38a':'#dacba7',Math.sin(i*.15)*.24,.23+rise,z,.94,.16,.22,ridge);
+    if(i%4===0){
+      for(const side of [-1,1]){
+        block('#72513a',side*.69,.56+rise,z,.08,.66,.08,ridge);
+        rock('#8bd8ee',side*.69,.95+rise,z,.13,.18,.13,ridge);
+      }
+    }
+  }
+  // Red route ends in rubble, matching the reading clue.
+  for(let i=0;i<8;i++){
+    block('#ac9b7c',1.0+i*.23,.26,1.2,.24,.11,.6,ridge);
+    if(i%2===0)rock('#ef7a58',1+i*.23,.7,1.58,.10,.15,.1,ridge);
+  }
+  for(let i=0;i<8;i++)rock('#827a6d',2.73+(i%3)*.28,.36+(i%2)*.26,.88+Math.floor(i/3)*.29,.32,.28,.29,ridge);
+  for(let i=0;i<20;i++){
+    const a=i*2.399, r=2.4+random()*1.6;
+    const x=Math.cos(a)*r,z=Math.sin(a)*r;
+    mesh(new T.CylinderGeometry(.06,.1,.7,7),'#7b583b',x,.59,z,1,1,1,ridge);
+    rock(i%2?'#598544':'#8da34f',x,1.04,z,.48,.59,.45,ridge);
+  }
+  const summit=new T.Group();summit.position.set(-.15,0,-4.1);ridge.add(summit);
+  mesh(new T.CylinderGeometry(.62,1.55,2.4,10),'#695045',0,1.2,0,1,1,.8,summit);
+  for(let i=0;i<9;i++){
+    const a=i*Math.PI*2/9;
+    rock('#8a6252',Math.cos(a)*.98,1.1+random()*.42,Math.sin(a)*.69,.40,.81,.37,summit);
+  }
+  rock('#523b36',0,1.56,.86,.43,.20,.12,summit);
+  const summitEye=mesh(spheres,magma,0,1.57,.96,.25,.095,.07,summit);
+  const flowers=Array.from({length:3},(_,i)=>{
+    const group=new T.Group();group.position.set(i%2?.76:-.76,.3,-.45-i*.58);ridge.add(group);
+    mesh(new T.CylinderGeometry(.025,.04,.5,8),'#42794b',0,.25,0,1,1,1,group);
+    for(let j=0;j<5;j++){
+      const a=j*Math.PI*2/5;
+      rock('#efd576',Math.cos(a)*.15,.56,Math.sin(a)*.15,.13,.065,.13,group);
+    }
+    const glow=new T.MeshStandardMaterial({color:'#c6f4fd',emissive:'#5fc9f2',emissiveIntensity:1.8,roughness:.4});
+    mesh(spheres,glow,0,.62,0,.10,.10,.10,group);
+    group.scale.setScalar(.01);
+    return group;
+  });
+    const target=new T.Vector3(), desired=new T.Vector3();
+  let previousStage='', stageAt=0, width=0, height=0, frameAt=0, overhead=0, ridgeCamera=0;
   const marker=$('dig-marker'), projected=new T.Vector3();
   const lerp=T.MathUtils.lerp;
   function frame(now) {
@@ -329,6 +376,10 @@ function createWorld(T) {
     const inQuest=questBounds.top <= innerHeight*.49 && questBounds.bottom>0;
     const progress=inQuest?3:reduced.matches?Math.round(position):position;
     const cinematic=progress===3;
+    summitEye.visible=stage==='summitDone';
+    const levelTwo=['trailEntry','trailRead','trailWalk','trailMath','trailBloom','trailMove','summitWalk','summitDone'].includes(stage);
+    const ridgeTravel=stage==='trailWalk'?(reduced.matches?1:smooth(time/2.5)):['trailMath','trailBloom','trailMove','summitWalk','summitDone'].includes(stage)?1:0;
+    const climb=stage==='summitWalk'?(reduced.matches?1:smooth(time/3.1)):stage==='summitDone'?1:0;
     const smooth=(x)=>{const n=Math.max(0,Math.min(1,x));return n*n*(3-2*n);};
     const gateShot=cinematic&&stage==='opening'&&!reduced.matches ? smooth(time/.8)*(1-smooth((time-2.35)/.95)) : 0;
     const travel=stage==='walk'?(reduced.matches?1:smooth(time/3.35)):['dig','brush','loot','done'].includes(stage)?1:0;
@@ -345,6 +396,13 @@ function createWorld(T) {
       target.lerp(new T.Vector3(w<h?3.9:2.85,.22,-1.9),overhead);
       desired.lerp(new T.Vector3(6.1,10.4,1.05),overhead);
       camera.zoom=lerp(lerp(2.05,2.9,gateShot),2.75,overhead)*mobile;
+    }
+    ridgeCamera=lerp(ridgeCamera,levelTwo&&cinematic?1:0,reduced.matches?1:.045);
+    if(ridgeCamera>.001){
+      const ridgeZ=lerp(3,.35,ridgeTravel)-climb*2.45;
+      target.lerp(new T.Vector3(w<h?22:20.8,.65,ridgeZ-.2),ridgeCamera);
+      desired.lerp(new T.Vector3(28,9.8,8.4-climb*2.2),ridgeCamera);
+      camera.zoom=lerp(camera.zoom,2.3*mobile,ridgeCamera);
     }
     camera.position.copy(desired);camera.lookAt(target);camera.updateProjectionMatrix();camera.updateMatrixWorld();
     marker.hidden=stage!=='dig'||!cinematic||overhead<.72;
@@ -365,9 +423,20 @@ function createWorld(T) {
     rowan.visible=!play;
     questRowan.visible=play;
     questRowan.position.set(3.9,.19+deck+(moving?Math.abs(step):0),routeZ);
+    if(levelTwo){
+      const z=lerp(3,.35,ridgeTravel)-climb*2.45;
+      const animate=['trailWalk','summitWalk'].includes(stage)&&!reduced.matches;
+      questRowan.position.set(22,.31+Math.max(0,-z)*.28+(animate?Math.abs(Math.sin(time*12))*.06:0),z);
+    }
     questRowan.rotation.y=Math.PI;
+    flowers.forEach((flower,i)=>{
+      const grown=['trailMove','summitWalk','summitDone'].includes(stage);
+      const growing=stage==='trailBloom';
+      const size=grown?1:growing?(reduced.matches?1:smooth((time-i*.3)/1.1)):.01;
+      flower.scale.setScalar(Math.max(.01,size));
+    });
     questBoots.forEach((boot,i)=>{
-      const stride=moving&&!reduced.matches?Math.sin(time*12+i*Math.PI):0;
+      const stride=(moving||stage==='trailWalk'||stage==='summitWalk')&&!reduced.matches?Math.sin(time*12+i*Math.PI):0;
       boot.position.y=.14+Math.max(0,stride)*.085;
       boot.position.z=.04+stride*.10;
     });
@@ -423,4 +492,5 @@ function createWorld(T) {
   }
   requestAnimationFrame(frame);
 }
+
 

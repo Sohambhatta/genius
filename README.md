@@ -25,3 +25,7 @@ Serve this folder over HTTP. GitHub Pages serves the root of main. Three.js and 
 - [Kenney Nature Kit](https://kenney.nl/assets/nature-kit) and its [GitHub Pages asset index entry](https://tmhsdigital.github.io/Free-Game-Dev-Assets/entry/kenney-nature-kit/) are CC0 prop references.
 - [Quaternius Stylized Nature MegaKit](https://quaternius.itch.io/stylized-nature-megakit) is a CC0 source for more detailed glTF foliage. Import selected meshes and batch repeats by geometry and material.
 - The current bridge, foliage, shoreline, and village details are authored procedurally in world.js. No third-party model files are shipped.
+
+## Level 2 / Lantern Ridge
+
+After collecting the bridge chest, follow the summit map to a new diorama. The reading clue distinguishes the open ridge from a blocked tunnel. The water problem spends three seeds to grow lantern flowers. The lookout completes the two-level demo at 200 XP.

@@ -4,3 +4,6 @@
 body:is([data-stage=pickup],[data-stage=opening],[data-stage=walk],[data-stage=brush],[data-stage=loot]) .game{display:none}
 body:is([data-stage=pickup],[data-stage=opening],[data-stage=walk],[data-stage=brush],[data-stage=loot]) .animation-caption{display:block}
 @media(max-width:680px){.demo{align-items:end;padding-top:72px}.play-area{width:min(100%,420px)}body:is([data-stage=pickup],[data-stage=opening],[data-stage=walk],[data-stage=brush],[data-stage=loot]) .demo{align-items:start}}
+
+body:is([data-stage=trailEntry],[data-stage=trailWalk],[data-stage=trailBloom],[data-stage=summitWalk]) .game{display:none}
+body:is([data-stage=trailEntry],[data-stage=trailWalk],[data-stage=trailBloom],[data-stage=summitWalk]) .animation-caption{display:block}
