@@ -12,6 +12,12 @@ let position = 0;
 function scrollPosition() {
   const line = innerHeight * .49;
   const tops = beats.map(beat=>beat.getBoundingClientRect().top);
+  const quest = beats[3].getBoundingClientRect();
+  if(quest.top <= line && quest.bottom > 0){
+    position=3;
+    document.body.dataset.chapter='3';
+    return;
+  }
   let i = 0;
   while(i < tops.length-1 && line >= tops[i+1]) i++;
   if(i === tops.length-1) position=i;
@@ -25,7 +31,10 @@ function scrollPosition() {
 if(window.gsap && window.ScrollTrigger){
   window.gsap.registerPlugin(window.ScrollTrigger);
   window.ScrollTrigger.create({trigger:'main',start:'top bottom',end:'bottom top',onUpdate:scrollPosition,onRefresh:scrollPosition});
-} else window.addEventListener('scroll',scrollPosition,{passive:true});
+}
+window.addEventListener('scroll',scrollPosition,{passive:true});
+window.addEventListener('hashchange',scrollPosition);
+window.addEventListener('pageshow',scrollPosition);
 window.addEventListener('resize',scrollPosition);
 scrollPosition();
 try {
@@ -220,6 +229,12 @@ function createWorld(T) {
       rock('#fae7a4',x,.55,z,.039,.034,.041);
     }
   }
+  // The village set piece and controllable quest avatar have separate transforms.
+  rowan.position.set(.2,.19,3.78);
+  rowan.rotation.y=.34;
+  const questRowan=rowan.clone(true);
+  const questBoots=boots.map(boot=>questRowan.children[rowan.children.indexOf(boot)]);
+  scene.add(questRowan);
   const gate = new T.Group();
   gate.position.set(3.9,.51,.45);
   scene.add(gate);
@@ -310,7 +325,9 @@ function createWorld(T) {
     const stage=document.body.dataset.stage;
     if(stage!==previousStage){previousStage=stage;stageAt=now;}
     const time=(now-stageAt)/1000;
-    const progress=reduced.matches?Math.round(position):position;
+    const questBounds=beats[3].getBoundingClientRect();
+    const inQuest=questBounds.top <= innerHeight*.49 && questBounds.bottom>0;
+    const progress=inQuest?3:reduced.matches?Math.round(position):position;
     const cinematic=progress===3;
     const smooth=(x)=>{const n=Math.max(0,Math.min(1,x));return n*n*(3-2*n);};
     const gateShot=cinematic&&stage==='opening'&&!reduced.matches ? smooth(time/.8)*(1-smooth((time-2.35)/.95)) : 0;
@@ -345,9 +362,11 @@ function createWorld(T) {
     const step=reduced.matches?0:Math.sin(walk*24)*.1;
     const routeZ=lerp(3.1,-2.16,walk);
     const deck=play?.33*Math.min(smooth((2.62-routeZ)/.64),smooth((routeZ+2.02)/.63)):0;
-    rowan.position.set(play?3.9:.2,.19+deck+(moving?Math.abs(step):0),play?routeZ:3.78);
-    rowan.rotation.y=play?Math.PI:.34;
-    boots.forEach((boot,i)=>{
+    rowan.visible=!play;
+    questRowan.visible=play;
+    questRowan.position.set(3.9,.19+deck+(moving?Math.abs(step):0),routeZ);
+    questRowan.rotation.y=Math.PI;
+    questBoots.forEach((boot,i)=>{
       const stride=moving&&!reduced.matches?Math.sin(time*12+i*Math.PI):0;
       boot.position.y=.14+Math.max(0,stride)*.085;
       boot.position.z=.04+stride*.10;
