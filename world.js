@@ -380,12 +380,13 @@ function createWorld(T) {
     const questBounds=beats[3].getBoundingClientRect();
     const inQuest=questBounds.top <= innerHeight*.49 && questBounds.bottom>0;
     const progress=inQuest?3:reduced.matches?Math.round(position):position;
+    const smooth=(x)=>{const n=Math.max(0,Math.min(1,x));return n*n*(3-2*n);};
     const cinematic=progress===3;
     summitEye.visible=stage==='summitDone';
     const levelTwo=['trailEntry','trailRead','trailWalk','trailMath','trailBloom','trailMove','summitWalk','summitDone'].includes(stage);
     const ridgeTravel=stage==='trailWalk'?(reduced.matches?1:smooth(time/2.5)):['trailMath','trailBloom','trailMove','summitWalk','summitDone'].includes(stage)?1:0;
     const climb=stage==='summitWalk'?(reduced.matches?1:smooth(time/3.1)):stage==='summitDone'?1:0;
-    const smooth=(x)=>{const n=Math.max(0,Math.min(1,x));return n*n*(3-2*n);};
+
     const gateShot=cinematic&&stage==='opening'&&!reduced.matches ? smooth(time/.8)*(1-smooth((time-2.35)/.95)) : 0;
     const travel=stage==='walk'?(reduced.matches?1:smooth(time/3.35)):['dig','brush','loot','done'].includes(stage)?1:0;
     const i=Math.floor(progress), a=shots[i], b=shots[Math.min(i+1,3)], t=progress-i;
@@ -497,5 +498,6 @@ function createWorld(T) {
   }
   requestAnimationFrame(frame);
 }
+
 
 
