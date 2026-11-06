@@ -7,7 +7,7 @@ const problems = [
 ];
 const level = byId('difficulty');
 let digs = 0;
-let stage = 'challenge', run = 0, seeds = 0, xp = 0;
+let stage = 'challenge', run = 0, seeds = 0, xp = 0, coins = 0;
 function setStage(next) {
   stage = next;
   document.body.dataset.stage = next;
@@ -24,8 +24,10 @@ function button(parent, text, action) {
 function render() {
   const data = problems[Number(level.value)];
   byId('seeds').textContent = '🌱 ' + seeds + ' seeds';
+  byId('coins').textContent = '◉ ' + coins + ' coins';
+  byId('animation-caption').textContent = {pickup:'Gathering seeds',opening:'The gate is lifting',walk:'Crossing the bridge',brush:'Brushing away the sand',loot:'Collecting treasure'}[stage] || '';
   byId('xp').textContent = '✦ ' + xp + ' XP';
-  const labels = {challenge:'01 / SUPPLY CACHE',pickup:'01 / COLLECTING SUPPLIES',path:'02 / READ THE TRAIL',opening:'02 / THE GATE OPENS',move:'02 / TRAIL UNLOCKED',walk:'03 / CROSSING THE GATE',dig:'04 / BURIED TREASURE',done:'04 / CHEST OPENED'};
+  const labels = {challenge:'01 / SUPPLY CACHE',pickup:'01 / COLLECTING SUPPLIES',path:'02 / READ THE TRAIL',opening:'02 / THE GATE OPENS',move:'02 / TRAIL UNLOCKED',walk:'03 / CROSSING THE GATE',dig:'04 / BURIED TREASURE',brush:'04 / CLEARING SAND',loot:'04 / COLLECTING TREASURE',done:'04 / CHEST OPENED'};
   byId('chapter').textContent = labels[stage];
   const body = byId('game-body');
   body.replaceChildren();
@@ -80,19 +82,33 @@ function render() {
     write('h3','Something is buried here.');
     write('p','Tap the mound or use Dig to brush away the sand. '+digs+' of 3 layers cleared.');
     actions([['Dig the sand',dig]]);
-  } else {
+  } else if(stage === 'done'){
     write('h3','Summit trail unlocked.');
-    write('p','Inside the chest is a map to Mount Ember. Your adventure can continue!');
+    write('p','You packed six gold coins and a map to Mount Ember.');
     actions([['Play again',reset]]);
   }
 }
 function dig(){
   if(stage!=='dig')return;
   digs++;
-  if(digs===3){xp=100;setStage('done');}
-  else setStage('dig');
+  const current = ++run;
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(digs < 3){
+    setStage('brush');
+    setTimeout(()=>{if(current===run)setStage('dig');}, reduced ? 70 : 420);
+    return;
+  }
+  setStage('loot');
+  for(let i=0;i<6;i++){
+    setTimeout(()=>{
+      if(current!==run)return;
+      coins=i+1;
+      byId('coins').textContent='◉ '+coins+' coins';
+      if(coins===6){xp=100;setStage('done');}
+    },reduced?100+i*30:1420+i*155);
+  }
 }
 byId('dig-marker').onclick=dig;
-function reset(){run++;seeds=0;xp=0;digs=0;setStage('challenge');}
+function reset(){run++;seeds=0;xp=0;digs=0;coins=0;setStage('challenge');}
 level.onchange=reset;
 render();

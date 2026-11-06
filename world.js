@@ -260,6 +260,14 @@ function createWorld(T) {
   const starGeometry = new T.ExtrudeGeometry(starShape,{depth:.05,bevelEnabled:false});
   const starMaterial = new T.MeshBasicMaterial({color:'#ffd365'});
   const stars = Array.from({length:24},()=>mesh(starGeometry,starMaterial,0,0,0));
+  const gold=new T.MeshStandardMaterial({color:'#ffc34f',metalness:.58,roughness:.27,emissive:'#e99722',emissiveIntensity:.23});
+  const coinShape=new T.CylinderGeometry(.123,.123,.046,24);
+  const treasure=Array.from({length:6},()=>{
+    const coin=mesh(coinShape,gold,0,0,0);
+    coin.castShadow=false;
+    return coin;
+  });
+  const coinDestination=new T.Vector3();
   const sparks=new T.BufferGeometry();
   const count=72, positions=new Float32Array(count*3);
   for(let i=0;i<count;i++){positions[i*3]=(random()-.5)*4;positions[i*3+1]=4+random()*4;positions[i*3+2]=-3.6+(random()-.5)*3;}
@@ -306,7 +314,7 @@ function createWorld(T) {
     const cinematic=progress===3;
     const smooth=(x)=>{const n=Math.max(0,Math.min(1,x));return n*n*(3-2*n);};
     const gateShot=cinematic&&stage==='opening'&&!reduced.matches ? smooth(time/.8)*(1-smooth((time-2.35)/.95)) : 0;
-    const travel=stage==='walk'?(reduced.matches?1:smooth(time/3.35)):['dig','done'].includes(stage)?1:0;
+    const travel=stage==='walk'?(reduced.matches?1:smooth(time/3.35)):['dig','brush','loot','done'].includes(stage)?1:0;
     const i=Math.floor(progress), a=shots[i], b=shots[Math.min(i+1,3)], t=progress-i;
     desired.set(...a.eye.map((value,j)=>lerp(value,b.eye[j],t)));
     target.set(...a.target.map((value,j)=>lerp(value,b.target[j],t)));
@@ -316,7 +324,7 @@ function createWorld(T) {
       const follow=travel*.85;
       target.set(lerp(w<h?3.9:2.6,3.9,gateShot),lerp(.88,1.15,gateShot),lerp(1.25-follow,.42,gateShot));
       desired.set(lerp(9.5,7.1,gateShot),lerp(7.4,4.2,gateShot),lerp(9.1,6.2,gateShot)-follow);
-      overhead=lerp(overhead,['dig','done'].includes(stage)?1:0,reduced.matches?1:.055);
+      overhead=lerp(overhead,['dig','brush','loot','done'].includes(stage)?1:0,reduced.matches?1:.055);
       target.lerp(new T.Vector3(w<h?3.9:2.85,.22,-1.9),overhead);
       desired.lerp(new T.Vector3(6.1,10.4,1.05),overhead);
       camera.zoom=lerp(lerp(2.05,2.9,gateShot),2.75,overhead)*mobile;
@@ -331,7 +339,7 @@ function createWorld(T) {
 
     const dt=Math.min(.05,(now-frameAt)/1000);frameAt=now;
     const moving=stage==='walk', done=stage==='done';
-    const opening=['opening','move','walk','dig','done'].includes(stage);
+    const opening=['opening','move','walk','dig','brush','loot','done'].includes(stage);
     const play=progress>2.52;
     const walk=travel;
     const step=reduced.matches?0:Math.sin(walk*24)*.1;
@@ -350,7 +358,23 @@ function createWorld(T) {
     chest.position.y=lerp(chest.position.y,-.28+depth*.18,ease);
     mound.scale.y=lerp(mound.scale.y,depth===3?.012:.39-depth*.105,ease);
     sand.forEach((grain,i)=>{grain.visible=i>=depth*6;});
-    lid.rotation.x=lerp(lid.rotation.x,done?-1.13:0,ease);
+    const loot=stage==='loot';
+    lid.rotation.x=lerp(lid.rotation.x,done||(loot&&time>.32)?-1.22:0,ease);
+    if(loot&&cinematic){
+      const hud=$('coins').getBoundingClientRect();
+      coinDestination.set((hud.left+hud.width*.5)/w*2-1,1-(hud.top+hud.height*.5)/h*2,projected.set(3.9,.8,-2.65).project(camera).z).unproject(camera);
+    }
+    treasure.forEach((coin,i)=>{
+      const age=time-i*.155;
+      coin.visible=loot&&cinematic&&!reduced.matches&&age>.52&&age<1.42;
+      if(!coin.visible)return;
+      const rise=smooth((age-.52)/.42), fly=smooth((age-.94)/.48);
+      const angle=i*2.399;
+      coin.position.set(3.9+Math.cos(angle)*rise*.55,.7+rise*(.72+i*.07),-2.65+Math.sin(angle)*rise*.45);
+      coin.position.lerp(coinDestination,fly);
+      coin.scale.setScalar(1-fly*.55);
+      coin.rotation.set(1.1+age*6,i,age*3);
+    });
     const count=[5,19,6][Number($('difficulty').value)];
     seeds.forEach(({pickup,x,z},index)=>{
       const gather=stage==='pickup'?Math.max(0,Math.min(1,(time-index*.024)*2.5)):0;
