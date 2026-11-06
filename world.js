@@ -1,48 +1,39 @@
 const $ = id => document.getElementById(id);
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
-const atlas = document.querySelector('.atlas');
 const canvas = $('terrain');
-const shots = {
-  kingdom:{target:[0,.8,0],radius:23,angle:.55,height:15},
-  grove:{target:[-4,1,1],radius:10,angle:.42,height:6},
-  falls:{target:[4,1,0],radius:10,angle:.78,height:6},
-  summit:{target:[0,2,-4],radius:11,angle:.18,height:7}
-};
-let shot = shots.kingdom, rotation = 0, open = false, busy = false, build;
-function focus(name) { shot = shots[name] || shots.kingdom; rotation=0; }
-window.addEventListener('mapview',e=>focus(e.detail));
-window.addEventListener('questview',({detail})=>{
-  const {step,route}=detail;
-  focus(step==='guardian'?route:step==='trail'?'kingdom':'summit');
-});
-$('view').hidden=false;
-$('view').onclick=async()=>{
-  if (busy) return;
-  if (!build) {
-    busy=true;
-    $('view').textContent='Opening the atlas…';
-    try {
-      const three=await import('https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js');
-      build=createWorld(three);
-    } catch {
-      $('map-note').textContent='The 3D atlas could not load. The illustrated map and quest are available.';
-      $('view').textContent='Retry 3D atlas ↗';
-      return;
-    } finally { busy=false; }
+const beats = [...document.querySelectorAll('[data-shot]')];
+const shots = [
+  {eye:[12,20,18],target:[0,1,-.7],zoom:1},
+  {eye:[-4,5.9,11],target:[-.1,.95,4.1],zoom:2.65},
+  {eye:[10,5.4,7],target:[3.5,1,.15],zoom:2.7},
+  {eye:[8,8,8.6],target:[3.9,.95,.15],zoom:2.25}
+];
+let position = 0;
+function scrollPosition() {
+  const line = innerHeight * .49;
+  const tops = beats.map(beat=>beat.getBoundingClientRect().top);
+  let i = 0;
+  while(i < tops.length-1 && line >= tops[i+1]) i++;
+  if(i === tops.length-1) position=i;
+  else {
+    const fraction = Math.max(0, Math.min(1, (line-tops[i]) / (tops[i+1]-tops[i])));
+    const transition = Math.max(0, (fraction-.56)/.44);
+    position=i+transition*transition*(3-2*transition);
   }
-  open=!open;
-  atlas.classList.toggle('active',open);
-  $('view').setAttribute('aria-pressed',String(open));
-  $('view').textContent=open?'Illustrated map ↗':'Explore in 3D ↗';
-  $('cameras').hidden=!open;
-  if(open) build();
-};
-$('left').onclick=()=>rotation-=Math.PI/5;
-$('right').onclick=()=>rotation+=Math.PI/5;
-let pointer=null;
-canvas.onpointerdown=e=>{pointer=e.clientX;canvas.setPointerCapture(e.pointerId);};
-canvas.onpointermove=e=>{if(pointer!==null){rotation-=(e.clientX-pointer)*.009;pointer=e.clientX;}};
-canvas.onlostpointercapture=()=>pointer=null;
+  document.body.dataset.chapter = String(Math.round(position));
+}
+if(window.gsap && window.ScrollTrigger){
+  window.gsap.registerPlugin(window.ScrollTrigger);
+  window.ScrollTrigger.create({trigger:'main',start:'top bottom',end:'bottom top',onUpdate:scrollPosition,onRefresh:scrollPosition});
+} else window.addEventListener('scroll',scrollPosition,{passive:true});
+window.addEventListener('resize',scrollPosition);
+scrollPosition();
+try {
+  const three = await import('https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js');
+  createWorld(three);
+} catch (error) {
+  console.warn('The 3D scene is unavailable. The quest remains playable.',error);
+}
 
 function createWorld(T) {
   const renderer=new T.WebGLRenderer({canvas,antialias:true});
@@ -54,7 +45,7 @@ function createWorld(T) {
   const scene=new T.Scene();
   scene.background=new T.Color('#143f45');
   scene.fog=new T.FogExp2('#143f45',.019);
-  const camera=new T.PerspectiveCamera(44,1,.1,85);
+  const camera=new T.OrthographicCamera(-12,12,7,-7,.1,100);
   scene.add(new T.HemisphereLight('#ffe6bc','#427c68',2.5));
   const light=new T.DirectionalLight('#ffd397',3.2);
   light.position.set(-11,18,7); light.castShadow=true;
@@ -173,6 +164,52 @@ function createWorld(T) {
     rock('#236962',side*.115,.14,.04,.12,.13,.16,rowan);
     rock('#3b312d',side*.09,.89,.235,.025,.035,.026,rowan);
   }
+  // The gate and pickups are scene objects whose state follows the quest.
+  for (const side of [-1,1]) {
+    for(let i=0;i<5;i++){
+      const x=3.9+side*(1+i*.4);
+      block('#b28057',x,.51,.45,.13,.67,.18);
+      if(i<4) for (const y of [.38,.64]) block('#d2a276',x+side*.20,y,.46,.43,.075,.10);
+      rock('#6b9a53',x,.28,1.34,.18,.16,.21);
+      rock(i%2?'#e5a85f':'#ee8e7f',x,.43,1.34,.084,.075,.083);
+    }
+  }
+  for(let i=0;i<7;i++) block(i%2?'#bc9465':'#dab57d',3.9,.20,1.01+i*.21,.73,.045,.19);
+  const gate = new T.Group();
+  gate.position.set(3.9,.22,.45);
+  scene.add(gate);
+  for (const x of [-.85,.85]) {
+    block('#ae9678',x,.85,0,.25,1.75,.35,gate);
+    block('#e2c899',x,1.78,0,.39,.17,.47,gate);
+  }
+  const door = new T.Group();
+  gate.add(door);
+  for (let i=0;i<7;i++) block(i%2?'#a96e45':'#c88950',-.63+i*.21,.77,0,.19,1.48,.15,door);
+  for (const y of [.42,1.08]) block('#624a42',0,y,.095,1.42,.15,.12,door);
+  rock('#ffc86a',0,.76,.15,.15,.15,.075,door);
+  const chest = new T.Group();
+  chest.position.set(3.9,.27,-1.12);scene.add(chest);
+  block('#9d4e30',0,.19,0,.72,.38,.52,chest);
+  const lid = new T.Group();
+  lid.position.set(0,.39,-.26);chest.add(lid);
+  block('#d88c43',0,.08,.26,.75,.16,.54,lid);
+  for (const x of [-.24,.24]) block('#ffe096',x,.17,.26,.075,.045,.54,lid);
+  const seeds = Array.from({length:19},(_,i)=>{
+    const a=i*2.399;
+    const pickup=rock('#f8ce69',3.8+Math.cos(a)*(.48+i*.036),.42,2.48+Math.sin(a)*(.27+i*.031),.13,.20,.10);
+    pickup.rotation.z=a;
+    return {pickup,x:pickup.position.x,z:pickup.position.z};
+  });
+  const starShape = new T.Shape();
+  for(let i=0;i<10;i++){
+    const a=Math.PI*.5+i*Math.PI/5,r=i%2?.095:.21;
+    if(i===0)starShape.moveTo(Math.cos(a)*r,Math.sin(a)*r);
+    else starShape.lineTo(Math.cos(a)*r,Math.sin(a)*r);
+  }
+  starShape.closePath();
+  const starGeometry = new T.ExtrudeGeometry(starShape,{depth:.05,bevelEnabled:false});
+  const starMaterial = new T.MeshBasicMaterial({color:'#ffd365'});
+  const stars = Array.from({length:24},()=>mesh(starGeometry,starMaterial,0,0,0));
   const sparks=new T.BufferGeometry();
   const count=72, positions=new Float32Array(count*3);
   for(let i=0;i<count;i++){positions[i*3]=(random()-.5)*4;positions[i*3+1]=4+random()*4;positions[i*3+2]=-3.6+(random()-.5)*3;}
@@ -199,31 +236,68 @@ function createWorld(T) {
     });
     scene.add(batch);
   }
-  const target=new T.Vector3(0,.8,0);
-  const desired=new T.Vector3();
-  const focusPosition=new T.Vector3();
-  let last=performance.now(), frameId;
-  function frame(now){
-    if(!open)return;
-    const dt=Math.min(.05,(now-last)/1000);last=now;
+  const target=new T.Vector3(), desired=new T.Vector3();
+  let previousStage='', stageAt=0, width=0, height=0, frameAt=0;
+  const lerp=T.MathUtils.lerp;
+  function frame(now) {
     const w=canvas.clientWidth,h=canvas.clientHeight;
-    if(!w||!h){frameId=requestAnimationFrame(frame);return;}
-    if(camera.aspect!==w/h||canvas.width!==Math.floor(w*renderer.getPixelRatio())){
-      renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();
+    if(!w||!h){requestAnimationFrame(frame);return;}
+    if(w!==width||h!==height){
+      renderer.setSize(w,h,false);width=w;height=h;
+      const aspect=w/h;
+      camera.left=-7.9*aspect;camera.right=7.9*aspect;
+      camera.top=7.9;camera.bottom=-7.9;
     }
-    const [x,y,z]=shot.target, angle=shot.angle+rotation;
-    const radius=shot.radius*Math.max(1,1.42/camera.aspect);
-    desired.set(x+Math.sin(angle)*radius,y+shot.height,z+Math.cos(angle)*radius);
-    const blend=reduced.matches||camera.position.lengthSq()===0?1:1-Math.exp(-dt*4);
-    target.lerp(focusPosition.set(x,y,z),blend);
-    camera.position.lerp(desired,blend);
-    camera.lookAt(target);
-    const won=document.body.dataset.quest==='won';
-    magma.emissiveIntensity=won?.55:1.6+(reduced.matches?0:Math.sin(now*.004)*.34);
-    if(!reduced.matches){ember.position.y=3.52+Math.sin(now*.002)*.09;owl.rotation.y=Math.sin(now*.0016)*.25;cinders.position.y=(now*.00055)%1.8;}
+    const progress=reduced.matches?Math.round(position):position;
+    const i=Math.floor(progress), a=shots[i], b=shots[Math.min(i+1,3)], t=progress-i;
+    desired.set(...a.eye.map((value,j)=>lerp(value,b.eye[j],t)));
+    target.set(...a.target.map((value,j)=>lerp(value,b.target[j],t)));
+    const mobile=Math.min(1,w/h*1.35);
+    camera.zoom=lerp(a.zoom,b.zoom,t)*mobile;
+    if(w<h) target.x=lerp(target.x,3.65,Math.min(1,progress/2));
+    camera.position.copy(desired);camera.lookAt(target);camera.updateProjectionMatrix();
+
+    const stage=document.body.dataset.stage;
+    if(stage!==previousStage){previousStage=stage;stageAt=now;}
+    const time=(now-stageAt)/1000;
+    const dt=Math.min(.05,(now-frameAt)/1000);frameAt=now;
+    const moving=stage==='walk', done=stage==='done';
+    const opening=['move','walk','done'].includes(stage);
+    const play=progress>2.52;
+    const walk=moving?Math.min(1,time/.99):done?1:0;
+    const step=reduced.matches?0:Math.sin(walk*24)*.1;
+    rowan.position.set(play?3.9:.2,.19+(moving?Math.abs(step):0),play?lerp(2.95,-.72,walk):3.78);
+    rowan.rotation.y=play?Math.PI:.34;
+    const ease=reduced.matches?1:1-Math.exp(-dt*7);
+    door.position.y=lerp(door.position.y,opening?1.85:0,ease);
+    lid.rotation.x=lerp(lid.rotation.x,done?-1.13:0,ease);
+    const count=[5,19,6][Number($('difficulty').value)];
+    seeds.forEach(({pickup,x,z},index)=>{
+      const gather=stage==='pickup'?Math.max(0,Math.min(1,(time-index*.024)*2.5)):0;
+      pickup.visible=index<count&&play&&(stage==='challenge'||(stage==='pickup'&&gather<1));
+      pickup.position.set(lerp(x,3.9,gather),.42+Math.sin(gather*Math.PI)*1.2,lerp(z,2.96,gather));
+      if(!reduced.matches)pickup.rotation.y=now*.002+index;
+    });
+    stars.forEach((star,index)=>{
+      const burst=done||stage==='move';
+      const age=time;
+      star.visible=burst&&age<1.22;
+      if(!star.visible)return;
+      const angle=index*2.399;
+      star.position.set(3.9+Math.cos(angle)*age*(1+index%4*.32),.92+age*(3+index%5*.35)-age*age*2.8,(done?-1.1:.45)+Math.sin(angle)*age*1.6);
+      star.rotation.set(age*2,index+age*2,angle+age);
+      star.scale.setScalar(1-Math.max(0,age-.7));
+    });
+    if(!reduced.matches){
+      ember.position.y=3.52+Math.sin(now*.002)*.09;
+      owl.rotation.y=Math.sin(now*.0016)*.25;
+      cinders.position.y=(now*.00055)%1.8;
+    }
+    magma.emissiveIntensity=done?.65:1.5;
     renderer.render(scene,camera);
-    frameId=requestAnimationFrame(frame);
+    canvas.parentElement.classList.add('ready');
+    requestAnimationFrame(frame);
   }
-  return ()=>{cancelAnimationFrame(frameId);last=performance.now();frameId=requestAnimationFrame(frame);};
+  requestAnimationFrame(frame);
 }
 
